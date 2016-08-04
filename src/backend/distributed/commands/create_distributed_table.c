@@ -23,8 +23,10 @@
 #include "catalog/pg_enum.h"
 #include "catalog/pg_extension.h"
 #include "catalog/pg_opclass.h"
+#include "catalog/pg_trigger.h"
 #include "commands/defrem.h"
 #include "commands/extension.h"
+#include "commands/trigger.h"
 #include "distributed/master_metadata_utility.h"
 #include "distributed/metadata_cache.h"
 #include "distributed/pg_dist_partition.h"
@@ -34,6 +36,7 @@
 #include "parser/parse_expr.h"
 #include "parser/parse_node.h"
 #include "parser/parse_relation.h"
+#include "parser/parser.h"
 #include "utils/builtins.h"
 #include "utils/fmgroids.h"
 #include "utils/lsyscache.h"
@@ -48,10 +51,11 @@ static void RecordDistributedRelationDependencies(Oid distributedRelationId,
 												  Node *distributionKey);
 static Oid SupportFunctionForColumn(Var *partitionColumn, Oid accessMethodId,
 									int16 supportFunctionNumber);
-
+static void CreateTruncateTrigger(Oid relationId);
 
 /* exports for SQL callable functions */
 PG_FUNCTION_INFO_V1(master_create_distributed_table);
+
 
 
 /*
@@ -255,6 +259,8 @@ master_create_distributed_table(PG_FUNCTION_ARGS)
 	heap_close(pgDistPartition, NoLock);
 	relation_close(distributedRelation, NoLock);
 
+	CreateTruncateTrigger(distributedRelationId);
+
 	PG_RETURN_VOID();
 }
 
@@ -376,4 +382,35 @@ SupportFunctionForColumn(Var *partitionColumn, Oid accessMethodId,
 										   supportFunctionNumber);
 
 	return supportFunctionOid;
+}
+
+
+/*
+ * CreateTruncateTrigger creates a truncate trigger on table identified by
+ * relationId and assigns citus_truncate_trigger() as handler. The new trigger
+ * is named as citus_truncate_trigger_on_ + relationId. Tigger name for relation
+ * id 14564 will be citus_truncate_trigger_on_14564 to prevent name conflicts.
+ */
+static void
+CreateTruncateTrigger(Oid relationId)
+{
+	CreateTrigStmt *trigger = NULL;
+	ObjectAddress triggerAddress;
+	StringInfo triggerName = makeStringInfo();
+	appendStringInfo(triggerName, "citus_truncate_trigger_on_%u", relationId);
+
+	trigger = makeNode(CreateTrigStmt);
+	trigger->trigname = triggerName->data;
+	trigger->relation = NULL;
+	trigger->funcname = SystemFuncName("citus_truncate_trigger");
+	trigger->args = NIL;
+	trigger->row = false;
+	trigger->timing = TRIGGER_TYPE_BEFORE;
+	trigger->events = TRIGGER_TYPE_TRUNCATE;
+	trigger->columns = NIL;
+	trigger->whenClause = NULL;
+	trigger->isconstraint = false;
+
+	triggerAddress = CreateTrigger(trigger, NULL, relationId, InvalidOid, InvalidOid,
+								   InvalidOid, false);
 }
