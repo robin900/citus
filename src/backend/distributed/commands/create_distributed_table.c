@@ -258,7 +258,14 @@ master_create_distributed_table(PG_FUNCTION_ARGS)
 	heap_close(pgDistPartition, NoLock);
 	relation_close(distributedRelation, NoLock);
 
-	CreateTruncateTrigger(distributedRelationId);
+	/*
+	 * PostgreSQL supports truncate trigger for regular relations only.
+	 * Truncate on foreign tables is not supported.
+	 */
+	if (relationKind == RELKIND_RELATION)
+	{
+		CreateTruncateTrigger(distributedRelationId);
+	}
 
 	PG_RETURN_VOID();
 }
@@ -410,6 +417,5 @@ CreateTruncateTrigger(Oid relationId)
 	trigger->whenClause = NULL;
 	trigger->isconstraint = false;
 
-	triggerAddress = CreateTrigger(trigger, NULL, relationId, InvalidOid, InvalidOid,
-								   InvalidOid, false);
+	CreateTrigger(trigger, NULL, relationId, InvalidOid, InvalidOid, InvalidOid, false);
 }
