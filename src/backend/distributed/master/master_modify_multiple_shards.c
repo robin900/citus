@@ -299,14 +299,17 @@ SendQueryToShards(Query *query, List *shardIntervalList, Oid relationId)
 }
 
 
-/* deparse_truncate_query creates sql representation of a truncate statement */
+/*
+ * deparse_truncate_query creates sql representation of a truncate statement. The
+ * function only generated basic truncate statement of the form
+ * 'truncate table <table_name>' it ignores all options. It also assumes that
+ * there is only one relation in the relation list.
+ */
 void
 deparse_truncate_query(Query *query, Oid distrelid, int64 shardid, StringInfo buffer)
 {
 	TruncateStmt *truncateStatement = NULL;
 	RangeVar *relation = NULL;
-	Oid relationId = InvalidOid;
-	bool failOK = false;
 	char *qualifiedName = NULL;
 
 	Assert(query->commandType == CMD_UTILITY);
@@ -317,8 +320,6 @@ deparse_truncate_query(Query *query, Oid distrelid, int64 shardid, StringInfo bu
 	Assert(list_length(truncateStatement->relations) == 1);
 
 	relation = (RangeVar *) linitial(truncateStatement->relations);
-	relationId = RangeVarGetRelid(relation, NoLock, failOK);
-
 	qualifiedName = quote_qualified_identifier(relation->schemaname,
 											   relation->relname);
 	appendStringInfo(buffer, "TRUNCATE TABLE %s_" UINT64_FORMAT, qualifiedName, shardid);
