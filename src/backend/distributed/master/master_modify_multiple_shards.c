@@ -61,7 +61,8 @@ static int SendQueryToShards(Query *query, List *shardIntervalList, Oid relation
 static int SendQueryToPlacements(char *shardQueryString,
 								 ShardConnections *shardConnections,
 								 bool returnTupleCount);
-static void deparse_truncate_query(Query *query, Oid distrelid, int64 shardid, StringInfo buffer);
+static void deparse_truncate_query(Query *query, Oid distrelid, int64 shardid, StringInfo
+								   buffer);
 
 PG_FUNCTION_INFO_V1(master_modify_multiple_shards);
 
@@ -336,9 +337,14 @@ SendQueryToPlacements(char *shardQueryString, ShardConnections *shardConnections
 	uint64 shardId = shardConnections->shardId;
 	List *connectionList = shardConnections->connectionList;
 	ListCell *connectionCell = NULL;
-	int32 shardAffectedTupleCount = 0;
+	int32 shardAffectedTupleCount = -1;
 
 	Assert(connectionList != NIL);
+
+	if (!returnTupleCount)
+	{
+		shardAffectedTupleCount = 0;
+	}
 
 	foreach(connectionCell, connectionList)
 	{

@@ -57,7 +57,6 @@ static void CreateTruncateTrigger(Oid relationId);
 PG_FUNCTION_INFO_V1(master_create_distributed_table);
 
 
-
 /*
  * master_create_distributed_table accepts a table, distribution column and
  * method and performs the corresponding catalog changes.

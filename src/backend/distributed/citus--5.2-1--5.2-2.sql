@@ -1,7 +1,7 @@
-CREATE OR REPLACE FUNCTION citus_truncate_trigger()
+CREATE OR REPLACE FUNCTION pg_catalog.citus_truncate_trigger()
 	RETURNS trigger
 	LANGUAGE plpgsql
-	SET search_path = pg_catalog
+	SET search_path = 'pg_catalog'
 	AS $cdbtt$
 DECLARE
 	partitionType char;
