@@ -51,7 +51,7 @@ static void RecordDistributedRelationDependencies(Oid distributedRelationId,
 												  Node *distributionKey);
 static Oid SupportFunctionForColumn(Var *partitionColumn, Oid accessMethodId,
 									int16 supportFunctionNumber);
-static void CreateTruncateTrigger(Oid relationId);
+static void CreateTruncateTrigger(Oid relationId, char *qualifiedRelationName);
 
 /* exports for SQL callable functions */
 PG_FUNCTION_INFO_V1(master_create_distributed_table);
@@ -77,6 +77,9 @@ master_create_distributed_table(PG_FUNCTION_ARGS)
 
 	Relation distributedRelation = NULL;
 	char *distributedRelationName = NULL;
+	Oid distributedRelationSchemaOid = InvalidOid;
+	char *distributedRelationSchema = NULL;
+	char *qualifiedRelationName = NULL;
 	char relationKind = '\0';
 
 	Relation pgDistPartition = NULL;
@@ -100,6 +103,11 @@ master_create_distributed_table(PG_FUNCTION_ARGS)
 	 */
 	distributedRelation = relation_open(distributedRelationId, AccessExclusiveLock);
 	distributedRelationName = RelationGetRelationName(distributedRelation);
+	distributedRelationSchemaOid = RelationGetNamespace(distributedRelation);
+	distributedRelationSchema = get_namespace_name(distributedRelationSchemaOid);
+
+	qualifiedRelationName = quote_qualified_identifier(distributedRelationSchema,
+													   distributedRelationName);
 
 	EnsureTableOwner(distributedRelationId);
 
@@ -264,7 +272,7 @@ master_create_distributed_table(PG_FUNCTION_ARGS)
 	 */
 	if (relationKind == RELKIND_RELATION)
 	{
-		CreateTruncateTrigger(distributedRelationId);
+		CreateTruncateTrigger(distributedRelationId, qualifiedRelationName);
 	}
 
 	PG_RETURN_VOID();
@@ -392,17 +400,18 @@ SupportFunctionForColumn(Var *partitionColumn, Oid accessMethodId,
 
 
 /*
- * CreateTruncateTrigger creates a truncate trigger on table identified by
- * relationId and assigns citus_truncate_trigger() as handler. The new trigger
- * is named as citus_truncate_trigger_on_ + relationId. Tigger name for relation
- * id 14564 will be citus_truncate_trigger_on_14564 to prevent name conflicts.
+ * CreateTruncateTrigger creates a truncate trigger on table identified by relationId
+ * and assigns citus_truncate_trigger() as handler. The new trigger is named as
+ * citus_truncate_trigger_on_ + schemaName.tableName. Trigger name for relation my_table
+ * from schema my_schema will be citus_truncate_trigger_on_my_schema.my_table to prevent
+ * name conflicts.
  */
 static void
-CreateTruncateTrigger(Oid relationId)
+CreateTruncateTrigger(Oid relationId, char *qualifiedRelationName)
 {
 	CreateTrigStmt *trigger = NULL;
 	StringInfo triggerName = makeStringInfo();
-	appendStringInfo(triggerName, "citus_truncate_trigger_on_%u", relationId);
+	appendStringInfo(triggerName, "citus_truncate_trigger_on_%s", qualifiedRelationName);
 
 	trigger = makeNode(CreateTrigStmt);
 	trigger->trigname = triggerName->data;
