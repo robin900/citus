@@ -31,7 +31,7 @@ SELECT master_create_empty_shard('test_truncate_append');
 SELECT master_create_empty_shard('test_truncate_append');
 
 -- verify 3 shards are presents
-SELECT * FROM pg_dist_shard where logicalrelid = 'test_truncate_append'::regclass;
+SELECT shardid FROM pg_dist_shard where logicalrelid = 'test_truncate_append'::regclass;
 
 TRUNCATE TABLE test_truncate_append;
 
@@ -39,7 +39,7 @@ TRUNCATE TABLE test_truncate_append;
 SELECT count(*) FROM test_truncate_append;
 
 -- verify no shard exists anymore
-SELECT * FROM pg_dist_shard where logicalrelid = 'test_truncate_append'::regclass;
+SELECT shardid FROM pg_dist_shard where logicalrelid = 'test_truncate_append'::regclass;
 
 DROP TABLE test_truncate_append;
 
@@ -76,7 +76,7 @@ INSERT INTO test_truncate_range values (100);
 SELECT count(*) FROM test_truncate_range;
 
 -- verify 3 shards are presents
-SELECT * FROM pg_dist_shard where logicalrelid = 'test_truncate_range'::regclass;
+SELECT shardid FROM pg_dist_shard where logicalrelid = 'test_truncate_range'::regclass;
 
 TRUNCATE TABLE test_truncate_range;
 
@@ -84,7 +84,7 @@ TRUNCATE TABLE test_truncate_range;
 SELECT count(*) FROM test_truncate_range;
 
 -- verify 3 shards are still present
-SELECT * FROM pg_dist_shard where logicalrelid = 'test_truncate_range'::regclass;
+SELECT shardid FROM pg_dist_shard where logicalrelid = 'test_truncate_range'::regclass;
 
 DROP TABLE test_truncate_range;
 
@@ -109,7 +109,7 @@ INSERT INTO test_truncate_hash values (100);
 SELECT count(*) FROM test_truncate_hash;
 
 -- verify 4 shards are present
-SELECT * FROM pg_dist_shard where logicalrelid = 'test_truncate_hash'::regclass;
+SELECT shardid FROM pg_dist_shard where logicalrelid = 'test_truncate_hash'::regclass;
 
 TRUNCATE TABLE test_truncate_hash;
 
@@ -128,6 +128,6 @@ TRUNCATE TABLE test_truncate_hash;
 SELECT count(*) FROM test_truncate_hash;
 
 -- verify 4 shards are still presents
-SELECT * FROM pg_dist_shard where logicalrelid = 'test_truncate_hash'::regclass;
+SELECT shardid FROM pg_dist_shard where logicalrelid = 'test_truncate_hash'::regclass;
 
 DROP TABLE test_truncate_hash;

@@ -46,12 +46,12 @@ SELECT master_create_empty_shard('test_truncate_append');
 (1 row)
 
 -- verify 3 shards are presents
-SELECT * FROM pg_dist_shard where logicalrelid = 'test_truncate_append'::regclass;
- logicalrelid | shardid | shardstorage | shardalias | shardminvalue | shardmaxvalue 
---------------+---------+--------------+------------+---------------+---------------
-        20270 | 1210000 | t            |            | 1             | 500
-        20270 | 1210001 | t            |            |               | 
-        20270 | 1210002 | t            |            |               | 
+SELECT shardid FROM pg_dist_shard where logicalrelid = 'test_truncate_append'::regclass;
+ shardid 
+---------
+ 1210000
+ 1210001
+ 1210002
 (3 rows)
 
 TRUNCATE TABLE test_truncate_append;
@@ -63,9 +63,9 @@ SELECT count(*) FROM test_truncate_append;
 (1 row)
 
 -- verify no shard exists anymore
-SELECT * FROM pg_dist_shard where logicalrelid = 'test_truncate_append'::regclass;
- logicalrelid | shardid | shardstorage | shardalias | shardminvalue | shardmaxvalue 
---------------+---------+--------------+------------+---------------+---------------
+SELECT shardid FROM pg_dist_shard where logicalrelid = 'test_truncate_append'::regclass;
+ shardid 
+---------
 (0 rows)
 
 DROP TABLE test_truncate_append;
@@ -108,12 +108,12 @@ SELECT count(*) FROM test_truncate_range;
 (1 row)
 
 -- verify 3 shards are presents
-SELECT * FROM pg_dist_shard where logicalrelid = 'test_truncate_range'::regclass;
- logicalrelid | shardid | shardstorage | shardalias | shardminvalue | shardmaxvalue 
---------------+---------+--------------+------------+---------------+---------------
-        20291 | 1210003 | t            |            | 1             | 500
-        20291 | 1210004 | t            |            | 501           | 1500
-        20291 | 1210005 | t            |            | 1501          | 2500
+SELECT shardid FROM pg_dist_shard where logicalrelid = 'test_truncate_range'::regclass;
+ shardid 
+---------
+ 1210003
+ 1210004
+ 1210005
 (3 rows)
 
 TRUNCATE TABLE test_truncate_range;
@@ -125,12 +125,12 @@ SELECT count(*) FROM test_truncate_range;
 (1 row)
 
 -- verify 3 shards are still present
-SELECT * FROM pg_dist_shard where logicalrelid = 'test_truncate_range'::regclass;
- logicalrelid | shardid | shardstorage | shardalias | shardminvalue | shardmaxvalue 
---------------+---------+--------------+------------+---------------+---------------
-        20291 | 1210003 | t            |            | 1             | 500
-        20291 | 1210004 | t            |            | 501           | 1500
-        20291 | 1210005 | t            |            | 1501          | 2500
+SELECT shardid FROM pg_dist_shard where logicalrelid = 'test_truncate_range'::regclass;
+ shardid 
+---------
+ 1210003
+ 1210004
+ 1210005
 (3 rows)
 
 DROP TABLE test_truncate_range;
@@ -176,9 +176,9 @@ SELECT count(*) FROM test_truncate_hash;
 (1 row)
 
 -- verify 4 shards are present
-SELECT * FROM pg_dist_shard where logicalrelid = 'test_truncate_hash'::regclass;
- logicalrelid | shardid | shardstorage | shardalias | shardminvalue | shardmaxvalue 
---------------+---------+--------------+------------+---------------+---------------
+SELECT shardid FROM pg_dist_shard where logicalrelid = 'test_truncate_hash'::regclass;
+ shardid 
+---------
 (0 rows)
 
 TRUNCATE TABLE test_truncate_hash;
@@ -207,13 +207,13 @@ SELECT count(*) FROM test_truncate_hash;
 (1 row)
 
 -- verify 4 shards are still presents
-SELECT * FROM pg_dist_shard where logicalrelid = 'test_truncate_hash'::regclass;
- logicalrelid | shardid | shardstorage | shardalias | shardminvalue | shardmaxvalue 
---------------+---------+--------------+------------+---------------+---------------
-        20312 | 1210006 | t            |            | -2147483648   | -1073741825
-        20312 | 1210007 | t            |            | -1073741824   | -1
-        20312 | 1210008 | t            |            | 0             | 1073741823
-        20312 | 1210009 | t            |            | 1073741824    | 2147483647
+SELECT shardid FROM pg_dist_shard where logicalrelid = 'test_truncate_hash'::regclass;
+ shardid 
+---------
+ 1210006
+ 1210007
+ 1210008
+ 1210009
 (4 rows)
 
 DROP TABLE test_truncate_hash;
