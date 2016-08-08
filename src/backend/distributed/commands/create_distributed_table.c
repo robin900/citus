@@ -401,7 +401,6 @@ static void
 CreateTruncateTrigger(Oid relationId)
 {
 	CreateTrigStmt *trigger = NULL;
-	ObjectAddress triggerAddress;
 	StringInfo triggerName = makeStringInfo();
 	appendStringInfo(triggerName, "citus_truncate_trigger_on_%u", relationId);
 
