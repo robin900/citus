@@ -6,10 +6,10 @@ ALTER SEQUENCE pg_catalog.pg_dist_shardid_seq RESTART 225000;
 ALTER SEQUENCE pg_catalog.pg_dist_jobid_seq RESTART 225000;
 
 -- Verify that a too-long-named table cannot be distributed.
-CREATE TABLE too_long_name_12345678901234567890123456789012345678901234567890 (
+CREATE TABLE too_long_12345678901234567890123456789012345678901234567890 (
         col1 integer not null,
         col2 integer not null);
-SELECT master_create_distributed_table('too_long_name_12345678901234567890123456789012345678901234567890', 'col1', 'hash');
+SELECT master_create_distributed_table('too_long_12345678901234567890123456789012345678901234567890', 'col1', 'hash');
 
 -- Table to use for rename checks.
 CREATE TABLE name_lengths (
@@ -17,9 +17,9 @@ CREATE TABLE name_lengths (
         col2 integer not null,
         constraint constraint_a UNIQUE (col1)
         );
-SELECT master_create_distributed_table('name_lengths', 'col1', 'append');
+SELECT master_create_distributed_table('name_lengths', 'col1', 'hash');
 
--- Verify that we cannot add columns with too-long names
+-- Verify that we CAN add columns with too-long names
 
 ALTER TABLE name_lengths ADD COLUMN float_col_12345678901234567890123456789012345678901234567890 FLOAT;
 ALTER TABLE name_lengths ADD COLUMN date_col_12345678901234567890123456789012345678901234567890 DATE;
@@ -28,14 +28,6 @@ ALTER TABLE name_lengths ADD COLUMN int_col_123456789012345678901234567890123456
 -- Verify that RENAME TO can't sneak a too-long name in there
 ALTER TABLE name_lengths ADD COLUMN float_column FLOAT;
 ALTER TABLE name_lengths RENAME COLUMN float_column TO float_col_12345678901234567890123456789012345678901234567890;
-
--- Verify that we cannot sneak too-long names in by executing commands with multiple subcommands
-
-ALTER TABLE name_lengths ADD COLUMN int_column1 INTEGER,
-	ADD COLUMN int_column2 INTEGER;
-
-ALTER TABLE name_lengths RENAME COLUMN int_column1 TO int_col_12345678901234567890123456789012345678901234567890,
-	RENAME COLUMN int_column2 TO int_col2_12345678901234567890123456789012345678901234567890;
 
 -- TODO add constraints with long names
 -- name a CHECK constraint too long, but column itself has nice name?
