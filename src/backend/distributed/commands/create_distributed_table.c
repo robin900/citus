@@ -28,6 +28,7 @@
 #include "distributed/master_metadata_utility.h"
 #include "distributed/metadata_cache.h"
 #include "distributed/pg_dist_partition.h"
+#include "distributed/relay_utility.h"
 #include "executor/spi.h"
 #include "nodes/execnodes.h"
 #include "nodes/nodeFuncs.h"
@@ -106,6 +107,15 @@ master_create_distributed_table(PG_FUNCTION_ARGS)
 
 	/* open system catalog and insert new tuple */
 	pgDistPartition = heap_open(DistPartitionRelationId(), RowExclusiveLock);
+
+        /* check that relation name is not too long to extend for its shard tables */
+          if (! CanAppendShardIdToName(distributedRelationName))
+          {
+                  ereport(ERROR, (errcode(ERRCODE_NAME_TOO_LONG),
+                                                  errmsg("table \"%s\" must have a name shorter "
+                                                  "than %d characters to be distributed",
+                                                             distributedRelationName, DISTNAMEDATALEN)));
+          }
 
 	/* check that the relation is not already distributed */
 	if (IsDistributedTable(distributedRelationId))
@@ -208,6 +218,16 @@ master_create_distributed_table(PG_FUNCTION_ARGS)
 
 		/* extract index key information from the index's pg_index info */
 		indexInfo = BuildIndexInfo(indexDesc);
+
+                if (! CanAppendShardIdToName(RelationGetRelationName(indexDesc)))
+                {
+                          ereport(ERROR, (errcode(ERRCODE_NAME_TOO_LONG),
+                                                            errmsg("table \"%s\" has index/constraint \"%s\" with name too long",
+                                                                           distributedRelationName, RelationGetRelationName(indexDesc)),
+                                                            errdetail("All indexes, constraints for a distributed table "
+                                                                "must be less than %d characters",
+                                                                DISTNAMEDATALEN)));
+                }
 
 		/* only check unique indexes */
 		if (indexInfo->ii_Unique == false)

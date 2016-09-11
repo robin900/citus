@@ -160,4 +160,9 @@ DROP TABLE primary_key_on_non_part_col, unique_const_on_non_part_col CASCADE;
 DROP TABLE primary_key_on_part_col, unique_const_on_part_col, unique_const_on_two_columns CASCADE;
 DROP TABLE unique_const_range_partitioned_tables CASCADE;
 
-
+-- Show that Citus forbids the distribution of tables whose shard names,
+-- once appended with shard ID, exceed PG's name data length (i.e. < NAMEDATALEN).
+CREATE TABLE tabletable12345678901234567890123456789012345678901234567890123 (
+        col1 integer not null,
+        col2 integer not null);
+SELECT master_create_distributed_table('tabletable12345678901234567890123456789012345678901234567890123', 'col1', 'hash');

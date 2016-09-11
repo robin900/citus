@@ -22,7 +22,14 @@
 /* Shard name and identifier related defines */
 #define SHARD_NAME_SEPARATOR '_'
 #define INVALID_SHARD_ID 0
+#define DISTNAMEDATALEN (NAMEDATALEN - 7)
 
+/*
+* CanAppendShardIdToName determines if the given *char, after appending
+* shard name separator and shard ID, would still be short enough to be
+* a valid PostgreSQL name (< NAMEDATALEN).
+*/
+#define CanAppendShardIdToName(name) (strlen(name) < DISTNAMEDATALEN)
 
 /*
  * RelayFileState represents last known states of shards on a given node. We
