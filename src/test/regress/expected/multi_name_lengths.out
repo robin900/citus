@@ -21,25 +21,103 @@ SELECT master_create_distributed_table('name_lengths', 'col1', 'hash');
  
 (1 row)
 
--- Verify that we CAN add columns with too-long names
+SELECT master_create_worker_shards('name_lengths', '4', '2');
+ master_create_worker_shards 
+-----------------------------
+ 
+(1 row)
+
+-- Verify that we CAN add columns with "too-long names", because
+-- the columns' names are not extended in the corresponding shard tables.
 ALTER TABLE name_lengths ADD COLUMN float_col_12345678901234567890123456789012345678901234567890 FLOAT;
 ALTER TABLE name_lengths ADD COLUMN date_col_12345678901234567890123456789012345678901234567890 DATE;
 ALTER TABLE name_lengths ADD COLUMN int_col_12345678901234567890123456789012345678901234567890 INTEGER DEFAULT 1;
--- Verify that RENAME TO can't sneak a too-long name in there
-ALTER TABLE name_lengths ADD COLUMN float_column FLOAT;
-ALTER TABLE name_lengths RENAME COLUMN float_column TO float_col_12345678901234567890123456789012345678901234567890;
-ERROR:  renaming distributed tables or their objects is currently unsupported
--- TODO add constraints with long names
--- name a CHECK constraint too long, but column itself has nice name?
--- Verify that we can't rename tables or constraints to too-long names
+-- add constraints with implicit names that are likely too long
+ALTER TABLE name_lengths ADD UNIQUE (float_col_12345678901234567890123456789012345678901234567890);
+ERROR:  alter table command is currently supported
+DETAIL:  Only ADD|DROP COLUMN, SET|DROP NOT NULL, SET|DROP DEFAULT and TYPE subcommands are supported.
+ALTER TABLE name_lengths ADD EXCLUDE (int_col_12345678901234567890123456789012345678901234567890 WITH =);
+ERROR:  alter table command is currently supported
+DETAIL:  Only ADD|DROP COLUMN, SET|DROP NOT NULL, SET|DROP DEFAULT and TYPE subcommands are supported.
+ALTER TABLE name_lengths ADD CHECK (date_col_12345678901234567890123456789012345678901234567890 > '2014-01-01'::date);
+ERROR:  alter table command is currently supported
+DETAIL:  Only ADD|DROP COLUMN, SET|DROP NOT NULL, SET|DROP DEFAULT and TYPE subcommands are supported.
+-- add constraints with EXPLICIT names that are too long
+ALTER TABLE name_lengths ADD CONSTRAINT unique_12345678901234567890123456789012345678901234567890 UNIQUE (float_col_12345678901234567890123456789012345678901234567890);
+ERROR:  alter table command is currently supported
+DETAIL:  Only ADD|DROP COLUMN, SET|DROP NOT NULL, SET|DROP DEFAULT and TYPE subcommands are supported.
+ALTER TABLE name_lengths ADD CONSTRAINT exclude_12345678901234567890123456789012345678901234567890 EXCLUDE (int_col_12345678901234567890123456789012345678901234567890 WITH =);
+ERROR:  alter table command is currently supported
+DETAIL:  Only ADD|DROP COLUMN, SET|DROP NOT NULL, SET|DROP DEFAULT and TYPE subcommands are supported.
+ALTER TABLE name_lengths ADD CONSTRAINT checky_12345678901234567890123456789012345678901234567890 CHECK (date_col_12345678901234567890123456789012345678901234567890 >= '2014-01-01'::date);
+ERROR:  alter table command is currently supported
+DETAIL:  Only ADD|DROP COLUMN, SET|DROP NOT NULL, SET|DROP DEFAULT and TYPE subcommands are supported.
+-- Placeholders for RENAME operation
 ALTER TABLE name_lengths RENAME TO name_len_12345678901234567890123456789012345678901234567890;
 ERROR:  renaming distributed tables or their objects is currently unsupported
-ALTER TABLE name_lengths RENAME CONSTRAINT constraint_a TO const_a_12345678901234567890123456789012345678901234567890;
+ALTER TABLE name_lengths RENAME CONSTRAINT unique_12345678901234567890123456789012345678901234567890 TO unique2_12345678901234567890123456789012345678901234567890;
 ERROR:  renaming distributed tables or their objects is currently unsupported
 -- Verify that CREATE INDEX and other CREATEs can't sneak in too-long names
 -- for objects related to already distributed tables.
 CREATE INDEX tmp_idx_12345678901234567890123456789012345678901234567890 ON name_lengths(col2);
--- Verify that non-distributed tables with indexes, constraints, etc.
+WARNING:  shard name too long to extend: "tmp_idx_12345678901234567890123456789012345678901234567890"
+CONTEXT:  while executing command on localhost:57638
+ERROR:  could not execute DDL command on worker node shards
+-- Verify that non-distributed tables with too-long names 
+-- for CHECK constraints are no trouble.
+CREATE TABLE sneaky_name_lengths (
+	col1 integer not null,
+        col2 integer not null,
+        int_col_12345678901234567890123456789012345678901234567890 integer not null,
+        CHECK (int_col_12345678901234567890123456789012345678901234567890 > 100)
+        );
+SELECT master_create_distributed_table('sneaky_name_lengths', 'col1', 'hash');
+ master_create_distributed_table 
+---------------------------------
+ 
+(1 row)
+
+DROP TABLE sneaky_name_lengths CASCADE;
+CREATE TABLE sneaky_name_lengths (
+	col1 integer not null,
+        col2 integer not null,
+        int_col_12345678901234567890123456789012345678901234567890 integer not null,
+        CONSTRAINT checky_12345678901234567890123456789012345678901234567890 CHECK (int_col_12345678901234567890123456789012345678901234567890 > 100)
+        );
+SELECT master_create_distributed_table('sneaky_name_lengths', 'col1', 'hash');
+ master_create_distributed_table 
+---------------------------------
+ 
+(1 row)
+
+SELECT master_create_worker_shards('sneaky_name_lengths', '4', '2');
+ master_create_worker_shards 
+-----------------------------
+ 
+(1 row)
+
+DROP TABLE sneaky_name_lengths CASCADE;
+-- Verify that non-distributed tables with indexes, index-backed constraints
 -- whose names are too long cause the table not to be distributable.
+CREATE TABLE sneaky_name_lengths (
+	col1 integer not null,
+        col2 integer not null,
+        int_col_12345678901234567890123456789012345678901234567890 integer not null,
+        EXCLUDE (int_col_12345678901234567890123456789012345678901234567890 WITH =)
+        );
+SELECT master_create_distributed_table('sneaky_name_lengths', 'col1', 'hash');
+ERROR:  table "sneaky_name_lengths" has index/constraint "sneaky_name_lengths_int_col_123456789012345678901234567890_excl" with name too long
+DETAIL:  All indexes, constraints for a distributed table must be less than 57 characters
+DROP TABLE sneaky_name_lengths CASCADE;
+CREATE TABLE sneaky_name_lengths (
+	col1 integer not null,
+        col2 integer not null,
+        int_col_12345678901234567890123456789012345678901234567890 integer not null,
+        constraint unique_12345678901234567890123456789012345678901234567890 UNIQUE (col1)
+        );
+SELECT master_create_distributed_table('sneaky_name_lengths', 'col1', 'hash');
+ERROR:  table "sneaky_name_lengths" has index/constraint "unique_12345678901234567890123456789012345678901234567890" with name too long
+DETAIL:  All indexes, constraints for a distributed table must be less than 57 characters
+DROP TABLE sneaky_name_lengths CASCADE;
 -- Clean up.
-DROP TABLE name_lengths CASCADE;
+DROP TABLE name_lengths;

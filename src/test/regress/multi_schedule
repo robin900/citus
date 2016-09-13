@@ -22,6 +22,7 @@ test: multi_table_ddl
 # The following distributed tests depend on creating a partitioned table and
 # uploading data to it.
 # ----------
+test: multi_name_lengths
 test: multi_create_table
 test: multi_master_protocol
 test: multi_load_data
@@ -83,7 +84,7 @@ test: multi_shard_modify
 # ----------
 test: multi_index_statements
 test: multi_alter_table_statements
-test: multi_name_lengths
+# test: multi_name_lengths
 
 # ----------
 # multi_create_schema tests creation, loading, and querying of a table in a new
