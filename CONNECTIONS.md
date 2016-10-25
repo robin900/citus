@@ -7,8 +7,8 @@ exactly one connection. The connections' transaction boundaries are synchronized
 a `BEGIN` statement issued by the client results in a `BEGIN` statement being executed
 for all of the connections.
 
-*Allowed when:* All queries and transaction contexts
-*Compatible executors:* router, real-time. Task tracker possible?
+- *Allowed when:* All queries and transaction contexts
+- *Compatible executors:* router, real-time. Task tracker possible?
 
 ### Shard Placement Connections
 
@@ -25,8 +25,8 @@ the synchronized worker connections serving a shard-placement role -- is a highl
 privileged role, "citus", and all objects and rows are visible to it. (Or should
 instead the
 
-*Allowed when:* No uncommitted DDL and no uncommitted DML, and `READ UNCOMMITTED` mode
-*Compatible executors:* real-time, task tracker. router executor possible, but unneeded.
+- *Allowed when:* No uncommitted DDL and no uncommitted DML, and `READ UNCOMMITTED` mode
+- *Compatible executors:* real-time, task tracker. router executor possible, but unneeded.
 
 ### Shard Placement Connections with Broadcast Pulls
 
@@ -37,6 +37,9 @@ with no relevant transaction context, either via dblink.
 
 The effective user role of the broadcast-pull connections is a highly privileged role, 
 "citus", and all objects and rows are visible to it.
+
+- *Allowed when:* XXX
+- *Compatible executors:* real-time, task-tracker
 
 ## Executors
 
@@ -54,9 +57,13 @@ to all the shard's placements, since they reside on multiple workers? Seems like
 
 XXX
 
+*Compatible connection contexts:* synchronized worker, shard-placement, shard-placement-with-broadcast
+
 ### Task-tracker Executor: serialized tasks, executed by background processes, with delay
 
 XXX
+
+*Compatible connection contexts:* synchronized worker, shard-placement, shard-placement-with-broadcast
 
 ## Multi-Transaction Context
 
